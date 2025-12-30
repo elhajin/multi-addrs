@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.30;
-/// @dev the code for the subAccount contract super minimal 
+
+/// @dev the code for the super minimal subAccount 
 /// @dev it stores the master address at the end of the code like immutable styles 
 /// @dev  called with calldata type : [address target , uint value , bytes data] , and it will call 
 ///       the target with the given value and data , and returns the  returned data or revert 
 /// @dev INITCODE = [init prefix][runtime...][master(20 bytes appended at deploy time)]
 /// @dev Fixed-size initcode prefix that returns exactly (RUNTIME_CODE || bytes20(master)).
-///      runtimeLen = 75 bytes, so returnSize = 75 + 20 = 95 (0x5f) bytes.
+///      runtimeLen = 71 bytes, so returnSize = 71 + 20 = 91 (0x5b) bytes.
 ///      initLen = 10 (0x0a) bytes.
 ///      Mnemonic:
-///        PUSH0 PUSH1 0x0a PUSH1 0x5f CODECOPY PUSH0 PUSH1 0x5f RETURN
+///        PUSH0 PUSH1 0x0a PUSH1 0x5b CODECOPY PUSH0 PUSH1 0x5b RETURN
 bytes constant INIT_CODE_PREFIX = hex"605b600a5f39605b5ff3"; 
 bytes constant RUNTIME_CODE = hex"5f60143803601491395f5160601c33146016576043565b604036106043576040360360405f375f5f604036035f6020355f355af115603f573d5f5f3e3d5ff35b5f5ffd5b5f5ff3";
 contract SubAccountFactory {
@@ -36,6 +37,13 @@ contract SubAccountFactory {
         require(subAccount != address(0), "CREATE2_FAILED");
     }
 
+
+
+
+    ////////////////////////////////// Getters //////////////////////////////////
+
+
+
     /// @dev get the account of user using create 2 predection by number 
     /// @param user the user address
     /// @param accountNumber number of the account 
@@ -43,6 +51,21 @@ contract SubAccountFactory {
         return _calculateAddress(user , (uint160(user) << 96) | accountNumber);
     }
 
+    function getAccountsCount(address user) public view returns (uint) {
+        return _nonces[user];
+    }
+
+    function isAccountDeployed(address user, uint accountNumber) public view returns (bool) {
+        return _nonces[user] > accountNumber;
+    }
+    
+
+
+    ////////////////////////////////// Internal Functions //////////////////////////////////
+
+    /// @dev calculate the address of the subAccount using the create 2 predection
+    /// @param user the user address
+    /// @param salt the salt of the subAccount
     function _calculateAddress(address user, uint salt) private view returns (address) {
         bytes memory init = bytes.concat(INIT_CODE_PREFIX, RUNTIME_CODE, bytes20(user));
         return address(uint160(uint(keccak256(abi.encodePacked(
