@@ -37,7 +37,7 @@ contract BigReturner {
 
 contract RevertWithCustom {
     error CustomError(string message);
-    
+
     function fail() external pure {
         revert CustomError("intentional failure");
     }
@@ -48,21 +48,21 @@ contract ETHSender {
         (bool ok,) = recipient.call{value: amount}("");
         require(ok, "send failed");
     }
-    
+
     receive() external payable {}
 }
 
 contract ContractMaster {
     SubAccountFactory public factory;
-    
+
     constructor(address _factory) {
         factory = SubAccountFactory(_factory);
     }
-    
+
     function deploy() external returns (address) {
         return factory.deploySubAccount();
     }
-    
+
     function withdraw(address subAccount, address recipient, uint256 amount) external {
         bytes memory callData = abi.encode(recipient, amount);
         (bool ok,) = subAccount.call(callData);
@@ -131,29 +131,29 @@ contract SubAccountFactoryTest is Test {
 
     function test_deployment_emitsEvent() public {
         address predicted = factory.getAccount(alice, 1);
-        
+
         vm.expectEmit(true, true, false, true);
         emit SubAccountDeployed(alice, predicted, 1);
-        
+
         vm.prank(alice);
         factory.deploySubAccount();
     }
 
     function test_multipleDeployments_emitCorrectAccountNumbers() public {
         vm.startPrank(alice);
-        
+
         vm.expectEmit(true, false, false, true);
         emit SubAccountDeployed(alice, factory.getAccount(alice, 1), 1);
         factory.deploySubAccount();
-        
+
         vm.expectEmit(true, false, false, true);
         emit SubAccountDeployed(alice, factory.getAccount(alice, 2), 2);
         factory.deploySubAccount();
-        
+
         vm.expectEmit(true, false, false, true);
         emit SubAccountDeployed(alice, factory.getAccount(alice, 3), 3);
         factory.deploySubAccount();
-        
+
         vm.stopPrank();
     }
 
@@ -162,16 +162,16 @@ contract SubAccountFactoryTest is Test {
     function test_isAccountDeployed_returnsFalseForZero() public {
         vm.prank(alice);
         factory.deploySubAccount();
-        
+
         assertFalse(factory.isAccountDeployed(alice, 0), "account 0 should not exist");
     }
 
     function test_isAccountDeployed_correctAfterFirstDeploy() public {
         assertFalse(factory.isAccountDeployed(alice, 1), "should be false before deploy");
-        
+
         vm.prank(alice);
         factory.deploySubAccount();
-        
+
         assertTrue(factory.isAccountDeployed(alice, 1), "should be true after deploy");
         assertFalse(factory.isAccountDeployed(alice, 2), "next should still be false");
     }
@@ -182,7 +182,7 @@ contract SubAccountFactoryTest is Test {
         factory.deploySubAccount();
         factory.deploySubAccount();
         vm.stopPrank();
-        
+
         assertFalse(factory.isAccountDeployed(alice, 0), "0 never deployed");
         assertTrue(factory.isAccountDeployed(alice, 1), "1 deployed");
         assertTrue(factory.isAccountDeployed(alice, 2), "2 deployed");
@@ -199,7 +199,7 @@ contract SubAccountFactoryTest is Test {
 
         vm.prank(bob);
         (bool ok, bytes memory ret) = subAccount.call{value: 1 ether}("");
-        
+
         assertTrue(ok, "should succeed");
         assertEq(ret.length, 0, "should return empty");
         assertEq(subAccount.balance, 1 ether, "ETH should be received");
@@ -212,10 +212,10 @@ contract SubAccountFactoryTest is Test {
 
         uint256 bobBefore = bob.balance;
         bytes memory withdraw = _encodeSubAccountCall(bob, 1 ether, "");
-        
+
         vm.prank(charlie);
         (bool ok, bytes memory ret) = subAccount.call(withdraw);
-        
+
         assertTrue(ok, "should not revert");
         assertEq(ret.length, 0, "should return empty");
         assertEq(bob.balance, bobBefore, "bob should NOT receive ETH");
@@ -336,7 +336,7 @@ contract SubAccountFactoryTest is Test {
         vm.deal(subAccount, 5 ether);
 
         bytes memory shortData = new bytes(63);
-        
+
         vm.prank(alice);
         (bool ok, bytes memory ret) = subAccount.call{value: 1 ether}(shortData);
 
@@ -366,7 +366,7 @@ contract SubAccountFactoryTest is Test {
         uint256 gasBefore = gasleft();
         factory.deploySubAccount();
         uint256 gasUsed = gasBefore - gasleft();
-        
+
         console.log("Gas for deployment:", gasUsed);
         assertLt(gasUsed, 100000, "deployment should be cheap");
     }
@@ -375,14 +375,14 @@ contract SubAccountFactoryTest is Test {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
         vm.deal(subAccount, 10 ether);
-        
+
         bytes memory callData = abi.encode(bob, 1 ether);
-        
+
         vm.prank(alice);
         uint256 gasBefore = gasleft();
         (bool ok,) = subAccount.call(callData);
         uint256 gasUsed = gasBefore - gasleft();
-        
+
         assertTrue(ok);
         console.log("Gas for ETH transfer:", gasUsed);
         assertLt(gasUsed, 30000, "ETH transfer should be very cheap");
@@ -391,16 +391,16 @@ contract SubAccountFactoryTest is Test {
     function test_gas_contractCall() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         BigReturner bigTarget = new BigReturner();
         bytes memory payload = abi.encodeCall(BigReturner.returnBig, (100));
         bytes memory callData = bytes.concat(abi.encode(address(bigTarget), 0), payload);
-        
+
         vm.prank(alice);
         uint256 gasBefore = gasleft();
         (bool ok,) = subAccount.call(callData);
         uint256 gasUsed = gasBefore - gasleft();
-        
+
         assertTrue(ok);
         console.log("Gas for contract call:", gasUsed);
     }
@@ -410,14 +410,14 @@ contract SubAccountFactoryTest is Test {
     function test_largeReturnData() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         BigReturner bigTarget = new BigReturner();
         bytes memory payload = abi.encodeCall(BigReturner.returnBig, (10000));
         bytes memory callData = bytes.concat(abi.encode(address(bigTarget), 0), payload);
-        
+
         vm.prank(alice);
         (bool ok, bytes memory ret) = subAccount.call(callData);
-        
+
         assertTrue(ok, "call failed");
         bytes memory decoded = abi.decode(ret, (bytes));
         assertEq(decoded.length, 10000, "wrong return size");
@@ -427,12 +427,12 @@ contract SubAccountFactoryTest is Test {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
         vm.deal(subAccount, 10 ether);
-        
+
         bytes memory callData = abi.encode(subAccount, 0);
-        
+
         vm.prank(alice);
         (bool ok,) = subAccount.call(callData);
-        
+
         assertTrue(ok, "self-call should succeed");
         assertEq(subAccount.balance, 10 ether, "balance unchanged");
     }
@@ -440,13 +440,13 @@ contract SubAccountFactoryTest is Test {
     function test_master_canCallFactory() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         bytes memory payload = abi.encodeCall(SubAccountFactory.getAccountsCount, (alice));
         bytes memory callData = bytes.concat(abi.encode(address(factory), 0), payload);
-        
+
         vm.prank(alice);
         (bool ok, bytes memory ret) = subAccount.call(callData);
-        
+
         assertTrue(ok, "factory call failed");
         uint256 count = abi.decode(ret, (uint256));
         assertEq(count, 1, "should return 1 account");
@@ -455,13 +455,13 @@ contract SubAccountFactoryTest is Test {
     function test_master_zeroValueTransfer() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         uint256 bobBefore = bob.balance;
         bytes memory callData = abi.encode(bob, 0);
-        
+
         vm.prank(alice);
         (bool ok,) = subAccount.call(callData);
-        
+
         assertTrue(ok, "zero transfer failed");
         assertEq(bob.balance, bobBefore, "bob balance unchanged");
     }
@@ -470,13 +470,13 @@ contract SubAccountFactoryTest is Test {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
         vm.deal(subAccount, 50 ether);
-        
+
         uint256 bobBefore = bob.balance;
         bytes memory callData = abi.encode(bob, 50 ether);
-        
+
         vm.prank(alice);
         (bool ok,) = subAccount.call(callData);
-        
+
         assertTrue(ok, "full transfer failed");
         assertEq(subAccount.balance, 0, "subaccount should be empty");
         assertEq(bob.balance, bobBefore + 50 ether, "bob should receive all");
@@ -486,26 +486,26 @@ contract SubAccountFactoryTest is Test {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
         vm.deal(subAccount, 1 ether);
-        
+
         bytes memory callData = abi.encode(bob, 100 ether);
-        
+
         vm.prank(alice);
         (bool ok,) = subAccount.call(callData);
-        
+
         assertFalse(ok, "should fail - insufficient balance");
     }
 
     function test_master_targetRevertsWithData_noDataForwarded() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         RevertWithCustom revertTarget = new RevertWithCustom();
         bytes memory payload = abi.encodeCall(RevertWithCustom.fail, ());
         bytes memory callData = bytes.concat(abi.encode(address(revertTarget), 0), payload);
-        
+
         vm.prank(alice);
         (bool ok, bytes memory ret) = subAccount.call(callData);
-        
+
         assertFalse(ok, "should revert");
         // Minimal runtime reverts with empty data for gas efficiency
         assertEq(ret.length, 0, "minimal runtime reverts with empty data");
@@ -514,41 +514,41 @@ contract SubAccountFactoryTest is Test {
     function test_subAccount_receivesETH_whileExecuting() public {
         vm.prank(alice);
         address subAccount = factory.deploySubAccount();
-        
+
         ETHSender sender = new ETHSender();
         vm.deal(address(sender), 10 ether);
-        
+
         bytes memory payload = abi.encodeCall(ETHSender.sendTo, (subAccount, 5 ether));
         bytes memory callData = bytes.concat(abi.encode(address(sender), 0), payload);
-        
+
         vm.prank(alice);
         (bool ok,) = subAccount.call(callData);
-        
+
         assertTrue(ok, "call failed");
         assertEq(subAccount.balance, 5 ether, "should receive ETH during call");
     }
 
     function test_multipleSubAccounts_sameBlock() public {
         uint256 bobBefore = bob.balance;
-        
+
         vm.startPrank(alice);
         address sub1 = factory.deploySubAccount();
         address sub2 = factory.deploySubAccount();
         address sub3 = factory.deploySubAccount();
         vm.stopPrank();
-        
+
         assertTrue(sub1 != sub2 && sub2 != sub3 && sub1 != sub3, "all different");
-        
+
         vm.deal(sub1, 1 ether);
         vm.deal(sub2, 1 ether);
         vm.deal(sub3, 1 ether);
-        
+
         vm.startPrank(alice);
         (bool ok1,) = sub1.call(abi.encode(bob, 0.3 ether));
         (bool ok2,) = sub2.call(abi.encode(bob, 0.4 ether));
         (bool ok3,) = sub3.call(abi.encode(bob, 0.3 ether));
         vm.stopPrank();
-        
+
         assertTrue(ok1 && ok2 && ok3, "all should succeed");
         assertEq(bob.balance, bobBefore + 1 ether, "bob received from all");
     }
@@ -560,13 +560,13 @@ contract SubAccountFactoryTest is Test {
 
     function test_masterIsContract() public {
         ContractMaster master = new ContractMaster(address(factory));
-        
+
         address subAccount = master.deploy();
         vm.deal(subAccount, 10 ether);
-        
+
         uint256 bobBefore = bob.balance;
         master.withdraw(subAccount, bob, 5 ether);
-        
+
         assertEq(bob.balance, bobBefore + 5 ether, "contract master should work");
     }
 
@@ -590,10 +590,10 @@ contract SubAccountFactoryTest is Test {
         address subAccount = factory.deploySubAccount();
 
         bytes memory largeData = new bytes(1000);
-        for (uint i = 0; i < 1000; i++) {
+        for (uint256 i = 0; i < 1000; i++) {
             largeData[i] = bytes1(uint8(i % 256));
         }
-        
+
         bytes memory payload = abi.encodeCall(MockTarget.echoData, (largeData));
         bytes memory callData = _encodeSubAccountCall(address(target), 0, payload);
 
