@@ -121,6 +121,61 @@ forge install
 forge test
 ```
 
+## Deploy
+
+The factory deploys to the **same address on all chains** via CREATE3.
+
+### Supported Chains
+
+| Chain | Chain ID |
+|-------|----------|
+| Ethereum | 1 |
+| Arbitrum | 42161 |
+| Optimism | 10 |
+| Base | 8453 |
+| Polygon | 137 |
+| BSC | 56 |
+| Avalanche | 43114 |
+| Gnosis | 100 |
+| Sepolia | 11155111 |
+| Hoodi | 560048 |
+
+### Dry Run (verify addresses)
+
+```bash
+./script/deploy-all.sh --dry
+```
+
+### Deploy to All Chains
+
+```bash
+export PRIVATE_KEY=0x...
+./script/deploy-all.sh --prod
+```
+
+### Deploy to Specific Chains
+
+```bash
+# Dry run
+./script/deploy-all.sh --dry --chains Sepolia,Hoodi
+
+# Production
+export PRIVATE_KEY=0x...
+./script/deploy-all.sh --prod --chains Ethereum,Arbitrum,Base
+```
+
+### Single Chain Deploy
+
+```bash
+# Dry run
+forge script script/Deploy.s.sol --rpc-url <rpc>
+
+# Deploy
+forge script script/Deploy.s.sol --rpc-url <rpc> --broadcast --private-key $PRIVATE_KEY
+```
+
+Deployments are written to `deployments/<chainId>.json`.
+
 ## Security
 
 - **Immutable master**: Embedded in bytecode at deploy time, cannot be changed
